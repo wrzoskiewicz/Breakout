@@ -1,6 +1,8 @@
 package com.example.breakout.ui
 
+import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -15,7 +17,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,26 +24,57 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.breakout.BreakoutScreen
 import com.example.breakout.Player
 import com.example.breakout.R
+import com.example.breakout.controller.PlayerController
 
 @Composable
 fun PlayScreen(
     navController: NavController
 ) {
     var showDialog by remember { mutableStateOf(false) }
+    val gameUiState = remember { GameUiState() }
+    val playerController = remember {
+        PlayerController(
+            player = Player(),
+            gameUiState = gameUiState
+        )
+    }
+
+    // Get screen width
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDrag = { change, dragAmount ->
+                        val speedMultiplier = gameUiState.playerMovementSpeed
+                        val newPlayerX =
+                            playerController.playerXPosition + dragAmount.x * speedMultiplier
+
+                        // Określenie granic ruchu gracza
+                        val leftBoundary = ((-screenWidth + playerController.player.width.dp)/ 2).value
+                        val rightBoundary = ((screenWidth - playerController.player.width.dp)/ 2).value
+
+                        // Ogranicz ruch gracza w obrębie granic ekranu
+                        playerController.playerXPosition =
+                            newPlayerX.coerceIn(leftBoundary, rightBoundary)
+                    }
+
+                )
+            }
     ) {
-        Player().drawPlayer(
+        playerController.drawPlayer(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
         )
@@ -79,7 +111,13 @@ fun PlayScreen(
                             onClick = { /* TODO: Implement settings action */ },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(text = "Settings")
+                            Text(text = "Żyroskop")
+                        }
+                        Button(
+                            onClick = { /* TODO: Implement settings action */ },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(text = "Ręcznie")
                         }
                     }
                 },

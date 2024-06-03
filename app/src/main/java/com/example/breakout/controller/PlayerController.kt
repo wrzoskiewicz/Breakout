@@ -1,45 +1,67 @@
 package com.example.breakout.controller
 
-import android.content.Context
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
+import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.dp
+import com.example.breakout.Player
+import com.example.breakout.ui.GameUiState
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.graphics.graphicsLayer
 
-class PlayerController(private val context: Context) : SensorEventListener {
-    private val sensorManager: SensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-    private val gyroscopeSensor: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+enum class ControlMode {
+    MANUAL, GYROSCOPE
+}
 
-    private var playerMovementSpeed: Float = 0f // Prędkość ruchu gracza
+var controlMode by mutableStateOf(ControlMode.MANUAL)
 
-    init {
-        gyroscopeSensor?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
+class PlayerController(
+    internal val player: Player,
+    private val gameUiState: GameUiState
+) {
+
+    var playerXPosition by mutableStateOf(0f)
+
+    // Metoda do rysowania gracza na ekranie
+    @Composable
+    fun drawPlayer(modifier: Modifier = Modifier) {
+        var isDragging by remember { mutableStateOf(false) }
+
+            if (controlMode == ControlMode.MANUAL) {
+            Box(
+                modifier = modifier
+                    .offset(x = playerXPosition.dp, y = 0.dp)
+                    .size(width = player.width.dp, height = player.height.dp)
+                    .background(Color.Red)
+                    .pointerInput(Unit) {
+                        detectDragGestures(
+                            onDragStart = { offset ->
+                                Log.d("PlayerController", "Drag started at $offset")
+                                isDragging = true
+                            },
+                            onDrag = { change, dragAmount ->
+                                if (isDragging) {
+                                    Log.d("PlayerController", "Dragging: $dragAmount")
+                                    val speedMultiplier = gameUiState.playerMovementSpeed
+                                    playerXPosition += dragAmount.x * speedMultiplier
+                                    Log.d("PlayerController", "playerXPosition: $playerXPosition")
+                                }
+                            },
+                            onDragEnd = {
+                                Log.d("PlayerController", "Drag ended")
+                                isDragging = false
+                            }
+                        )
+                    }
+            )
+            } else {//implementacja metody poruszania się gracza za pomocą żyroskopu}
         }
-    }
-
-    override fun onSensorChanged(event: SensorEvent) {
-        if (event.sensor == gyroscopeSensor) {
-            val movementSpeed = event.values[0] // Odczytaj prędkość ruchu z żyroskopu
-
-            // Aktualizacja prędkości ruchu gracza
-            playerMovementSpeed = movementSpeed
-        }
-    }
-
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        // Nie potrzebujemy tego tutaj
-    }
-
-    // Metoda do zwracania prędkości ruchu gracza
-    fun getPlayerMovementSpeed(): Float {
-        return playerMovementSpeed
-    }
-
-    // Metoda do zatrzymania nasłuchiwania na zmiany w sensorze
-    fun stop() {
-        sensorManager.unregisterListener(this)
     }
 }
