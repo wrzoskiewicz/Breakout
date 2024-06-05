@@ -21,7 +21,8 @@
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Breakout"
-            android:screenOrientation="landscape">
+            android:screenOrientation="landscape"
+            android:windowFullscreen="true">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

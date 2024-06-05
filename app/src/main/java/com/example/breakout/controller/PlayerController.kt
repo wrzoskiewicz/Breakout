@@ -1,67 +1,72 @@
 package com.example.breakout.controller
 
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.util.Log
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import com.example.breakout.Player
 import com.example.breakout.ui.GameUiState
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.graphics.graphicsLayer
+
 
 enum class ControlMode {
     MANUAL, GYROSCOPE
 }
 
-var controlMode by mutableStateOf(ControlMode.MANUAL)
-
 class PlayerController(
     internal val player: Player,
-    private val gameUiState: GameUiState
+    private val gameUiState: GameUiState,
+    context: Context
 ) {
+    private var currentGyroscopeData: Float = 0f
 
+    private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    private val gyroscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
     var playerXPosition by mutableStateOf(0f)
 
-    // Metoda do rysowania gracza na ekranie
-    @Composable
-    fun drawPlayer(modifier: Modifier = Modifier) {
-        var isDragging by remember { mutableStateOf(false) }
-
-            if (controlMode == ControlMode.MANUAL) {
-            Box(
-                modifier = modifier
-                    .offset(x = playerXPosition.dp, y = 0.dp)
-                    .size(width = player.width.dp, height = player.height.dp)
-                    .background(Color.Red)
-                    .pointerInput(Unit) {
-                        detectDragGestures(
-                            onDragStart = { offset ->
-                                Log.d("PlayerController", "Drag started at $offset")
-                                isDragging = true
-                            },
-                            onDrag = { change, dragAmount ->
-                                if (isDragging) {
-                                    Log.d("PlayerController", "Dragging: $dragAmount")
-                                    val speedMultiplier = gameUiState.playerMovementSpeed
-                                    playerXPosition += dragAmount.x * speedMultiplier
-                                    Log.d("PlayerController", "playerXPosition: $playerXPosition")
-                                }
-                            },
-                            onDragEnd = {
-                                Log.d("PlayerController", "Drag ended")
-                                isDragging = false
-                            }
-                        )
-                    }
-            )
-            } else {//implementacja metody poruszania się gracza za pomocą żyroskopu}
+    private val gyroscopeListener: SensorEventListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            if (gameUiState.controlMode == ControlMode.GYROSCOPE) {
+                val speedMultiplier = gameUiState.playerMovementSpeedGyroscop
+                // Aktualizacja danych z żyroskopu
+                currentGyroscopeData = event.values[0]
+                playerXPosition += currentGyroscopeData * speedMultiplier
+            }
         }
+
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+            // Nie potrzebujemy tego zaimplementować
+        }
+    }
+
+    init {
+        sensorManager.registerListener(gyroscopeListener, gyroscopeSensor, SensorManager.SENSOR_DELAY_GAME)
+    }
+
+    // Wyrejestrowanie słuchacza żyroskopu w momencie zakończenia działania kontrolera
+    fun dispose() {
+        sensorManager.unregisterListener(gyroscopeListener)
+    }
+
+    fun updatePlayerPositionWithGyroscope(
+        gyroscopeData: Float,
+        leftBoundary: Float,
+        rightBoundary: Float
+    ) {
+        Log.d("PlayerController", "siema siema siema")
+        Log.d("PlayerController", "Gyroscope data: $gyroscopeData")
+        Log.d("PlayerController", "Gyroscope data: ${gameUiState.playerMovementSpeed}")
+            val speedMultiplier = gameUiState.playerMovementSpeedGyroscop
+        val newPosition = playerXPosition + (gyroscopeData * speedMultiplier)
+        playerXPosition = newPosition.coerceIn(leftBoundary, rightBoundary)
+
+    }
+    fun getCurrentGyroscopeData(): Float {
+        return currentGyroscopeData
     }
 }
