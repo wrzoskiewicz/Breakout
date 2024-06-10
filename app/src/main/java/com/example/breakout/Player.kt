@@ -20,27 +20,3 @@ class Player(
     val height: Float = 10f, // Wysokość gracza
     val color: Color = Color.Red // Kolor gracza
 )
-
-@Composable
-fun AnimatePlayer(
-    playerController: PlayerController,
-    gameUiState: GameUiState,
-    Modifier: Modifier
-) {
-    val animatedPosition by animateFloatAsState(
-        targetValue = playerController.playerXPosition,
-        finishedListener = {
-            // Tutaj możesz wykonać jakieś dodatkowe czynności po zakończeniu animacji, jeśli to konieczne
-        }
-    )
-
-    Box(
-        modifier = Modifier
-            .offset(x = animatedPosition.dp, y = 0.dp)
-            .size(width = playerController.player.width.dp, height = playerController.player.height.dp)
-            .background(playerController.player.color)
-            .graphicsLayer {
-                translationX = animatedPosition
-            }
-    )
-}

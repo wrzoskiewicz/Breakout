@@ -47,7 +47,6 @@ fun PlayScreen(
     navController: NavController,
     context: Context,
 ) {
-    Log.d("PlayScreen", "PlayScreen composable called")
     var showDialog by remember { mutableStateOf(false) }
     val gameUiState = remember { GameUiState() }
     val playerController = remember {
@@ -59,8 +58,7 @@ fun PlayScreen(
     }
 
     // Get screen width
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
 
     Box(
         modifier = Modifier
@@ -79,10 +77,8 @@ fun PlayScreen(
                                     playerController.playerXPosition + dragAmount.x * speedMultiplier
 
                                 // Określenie granic ruchu gracza
-                                val leftBoundary =
-                                    ((-screenWidth + playerController.player.width.dp) / 2).value
-                                val rightBoundary =
-                                    ((screenWidth - playerController.player.width.dp) / 2).value
+                                val leftBoundary = ((-screenWidth + playerController.player.width.dp) / 2).value
+                                val rightBoundary = ((screenWidth - playerController.player.width.dp) / 2).value
                                 playerController.playerXPosition =
                                     newPlayerX.coerceIn(leftBoundary, rightBoundary)
                             }
@@ -95,7 +91,9 @@ fun PlayScreen(
             val currentGyroscopeData = playerController.getCurrentGyroscopeData()
             playerController.updatePlayerPositionWithGyroscope(currentGyroscopeData, leftBoundary, rightBoundary)
         }
-        DrawPlayer(playerController, gameUiState, Modifier.align(Alignment.BottomCenter))
+        AnimateBall(playerController)
+        DrawPlayer(playerController, Modifier.align(Alignment.BottomCenter))
+
 
         if (showDialog) {
             AlertDialogSettings(
@@ -175,19 +173,25 @@ fun AlertDialogSettings(
 @Composable
 fun DrawPlayer(
     playerController: PlayerController,
-    gameUiState: GameUiState,
-    Modifier: Modifier
+    modifier: Modifier
 ) {
     Log.d("PlayScreen", "DRAW PLAYER called")
 
     val playerXPosition = playerController.playerXPosition // Zaktualizowane
+    fun updateCornerPositions() {
+        playerController.leftCornerXPosition = playerXPosition - 40f/ 2
+        playerController.rightCornerXPosition = playerXPosition + 40f / 2
+        Log.d("PlayScreen", "playerx: $playerXPosition}")
+    }
+
+    updateCornerPositions()
 
     LaunchedEffect(key1 = playerXPosition) {
         playerController.playerXPosition = playerXPosition
     }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .offset(x = playerXPosition.dp, y = 0.dp) // Zaktualizowane
             .size(width = playerController.player.width.dp, height = playerController.player.height.dp)
             .background(Color.Red)

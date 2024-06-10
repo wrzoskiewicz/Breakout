@@ -28,6 +28,8 @@ class PlayerController(
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private val gyroscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
     var playerXPosition by mutableStateOf(0f)
+    var leftCornerXPosition by mutableStateOf(0f)
+    var rightCornerXPosition by mutableStateOf(0f)
 
     private val gyroscopeListener: SensorEventListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
@@ -66,6 +68,8 @@ class PlayerController(
         playerXPosition = newPosition.coerceIn(leftBoundary, rightBoundary)
 
     }
+
+
     fun getCurrentGyroscopeData(): Float {
         return currentGyroscopeData
     }
